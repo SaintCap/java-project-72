@@ -17,6 +17,10 @@ checkstyle {
     maxWarnings = 0
 }
 
+application {
+    mainClass.set("hexlet.code.App")
+}
+
 jacoco {
     toolVersion = "0.8.14"
 }
@@ -39,6 +43,8 @@ repositories {
 }
 
 dependencies {
+    implementation("io.javalin:javalin:5.6.3")
+    implementation("org.slf4j:slf4j-simple:2.0.12")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
