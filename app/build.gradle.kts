@@ -43,6 +43,7 @@ repositories {
 }
 
 dependencies {
+    testImplementation("io.javalin:javalin-testtools:6.1.3")
     implementation("io.javalin:javalin:6.1.3")
     implementation("org.slf4j:slf4j-simple:2.0.12")
     implementation("com.zaxxer:HikariCP:5.1.0")
@@ -52,6 +53,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("gg.jte:jte:3.1.9")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
     compileOnly("org.projectlombok:lombok:1.18.42")
     annotationProcessor("org.projectlombok:lombok:1.18.42")
     testCompileOnly("org.projectlombok:lombok:1.18.42")

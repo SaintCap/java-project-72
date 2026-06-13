@@ -6,6 +6,7 @@ import io.javalin.Javalin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
@@ -17,7 +18,6 @@ import hexlet.code.model.Url;
 import hexlet.code.repository.UrlRepository;
 
 import java.net.URI;
-import java.net.URL;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
@@ -117,9 +117,8 @@ public class App {
 
                 var model = new HashMap<String, Object>();
 
-                // FIX: use "flash" key (not "error") so layout.jte displays it
                 model.put(
-                        "flash",
+                       "flash",
                         "Некорректный URL"
                 );
 
@@ -163,20 +162,30 @@ public class App {
         return app;
     }
 
-    private static String normalizeUrl(String rawUrl) throws Exception {
+    static String normalizeUrl(String rawUrl) {
+        try {
+            String url = rawUrl.trim();
 
-        URI uri = new URI(rawUrl);
-        URL url = uri.toURL();
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "https://" + url;
+            }
 
-        String protocol = url.getProtocol();
-        String host = url.getHost();
-        int port = url.getPort();
+            URI uri = new URI(url);
 
-        if (port == -1) {
-            return protocol + "://" + host;
+            String protocol = uri.getScheme();
+            String host = uri.getHost();
+            int port = uri.getPort();
+
+            if (port == -1 ||
+                    (port == 80 && "http".equals(protocol)) ||
+                    (port == 443 && "https".equals(protocol))) {
+                return protocol + "://" + host;
+            }
+
+            return protocol + "://" + host + ":" + port;
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid URL: " + rawUrl, e);
         }
-
-        return protocol + "://" + host + ":" + port;
     }
 
     private static Map<String, Object> modelToMap(Object model) {
