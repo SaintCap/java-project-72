@@ -4,7 +4,7 @@ plugins {
     jacoco
     application
     checkstyle
-    //id("org.sonarqube") version "7.0.1.6134"
+    id("org.sonarqube") version "7.0.1.6134"
 }
 
 group = "hexlet.code"
@@ -63,12 +63,12 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok:1.18.42")
 }
 
-//sonar {
-//   properties {
-//        property("sonar.projectKey", "SaintCap_java-project-72")
-//        property("sonar.organization", "saintcap")
-//    }
-//}
+sonar {
+   properties {
+        property("sonar.projectKey", "SaintCap_java-project-72")
+        property("sonar.organization", "saintcap")
+    }
+}
 
 tasks.named<Test>("test") {
     useJUnitPlatform()
