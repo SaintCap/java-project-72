@@ -86,7 +86,6 @@ public class UrlRepository extends BaseRepository {
         try (
                 Connection conn = DATA_SOURCE.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql);
-                // FIX: ResultSet included directly in the try-with-resources list
                 ResultSet rs = stmt.executeQuery()
         ) {
             List<Url> urls = new ArrayList<>();
@@ -123,7 +122,6 @@ public class UrlRepository extends BaseRepository {
 
             stmt.executeUpdate();
 
-            // FIX: generatedKeys also closed via try-with-resources
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     url.setId(
