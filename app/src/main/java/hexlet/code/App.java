@@ -3,7 +3,7 @@ package hexlet.code;
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
-import gg.jte.resolve.DirectoryCodeResolver;
+import gg.jte.resolve.ResourceCodeResolver;
 import hexlet.code.model.Url;
 import hexlet.code.model.UrlCheck;
 import hexlet.code.repository.UrlCheckRepository;
@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.net.URI;
-import java.nio.file.Path;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.HashMap;
@@ -31,8 +30,8 @@ public class App {
     private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
     private static TemplateEngine createTemplateEngine() {
-        var codeResolver = new DirectoryCodeResolver(
-                Path.of("src/main/resources/templates")
+        var codeResolver = new ResourceCodeResolver(
+                "templates", App.class.getClassLoader()
         );
         return TemplateEngine.create(codeResolver, ContentType.Html);
     }
@@ -229,7 +228,6 @@ public class App {
         var app = getApp();
 
         app.start(8000);
-
         LOGGER.info("Application started on port 8000");
     }
 }
