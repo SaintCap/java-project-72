@@ -1,11 +1,21 @@
 plugins {
+    id("java")
+    id("checkstyle")
     jacoco
     application
+    checkstyle
     id("org.sonarqube") version "7.0.1.6134"
 }
 
 group = "hexlet.code"
 version = "1.0-SNAPSHOT"
+
+checkstyle {
+    toolVersion = "10.12.4"
+    configFile = file("config/checkstyle/checkstyle.xml")
+    isIgnoreFailures = false
+    maxWarnings = 0
+}
 
 application {
     mainClass.set("hexlet.code.App")
@@ -62,4 +72,14 @@ sonar {
 
 tasks.named<Test>("test") {
     useJUnitPlatform()
+}
+
+tasks {
+    checkstyleMain {
+        dependsOn(compileJava)
+    }
+
+    checkstyleTest {
+        dependsOn(compileTestJava)
+    }
 }
