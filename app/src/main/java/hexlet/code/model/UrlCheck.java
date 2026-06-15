@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class UrlCheck {
+public final class UrlCheck {
 
     private Long id;
     private Integer statusCode;
