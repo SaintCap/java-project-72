@@ -8,7 +8,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class UrlCheckRepository extends BaseRepository {
@@ -80,6 +82,31 @@ public class UrlCheckRepository extends BaseRepository {
 
                 return checks;
             }
+        }
+    }
+
+    public static Map<Long, UrlCheck> findLatestChecks()
+            throws SQLException {
+
+        String sql = """
+                SELECT *
+                FROM url_checks
+                ORDER BY created_at ASC
+                """;
+
+        try (
+                Connection conn = DATA_SOURCE.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()
+        ) {
+            Map<Long, UrlCheck> result = new HashMap<>();
+
+            while (rs.next()) {
+                UrlCheck check = buildUrlCheck(rs);
+                result.put(check.getUrlId(), check);
+            }
+
+            return result;
         }
     }
 

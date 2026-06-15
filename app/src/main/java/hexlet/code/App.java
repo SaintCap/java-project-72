@@ -128,8 +128,10 @@ public class App {
 
     private static void listUrls(Context ctx) throws SQLException {
         var urls = UrlRepository.getEntities();
+        var latestChecks = UrlCheckRepository.findLatestChecks();
         var model = new HashMap<String, Object>();
         model.put("urls", urls);
+        model.put("latestChecks", latestChecks);
         model.put("flash", java.util.Objects.toString(ctx.consumeSessionAttribute("flash"), ""));
         ctx.render("urls/index.jte", model);
     }
@@ -224,6 +226,6 @@ public class App {
         var app = getApp();
 
         app.start(8000);
-        LOGGER.info("Application started on port 7070");
+        LOGGER.info("Application started on port 8000");
     }
 }
