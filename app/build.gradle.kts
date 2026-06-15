@@ -4,7 +4,7 @@ plugins {
     jacoco
     application
     checkstyle
-    id("org.sonarqube") version "7.0.1.6134"
+    //id("org.sonarqube") version "7.0.1.6134"
 }
 
 group = "hexlet.code"
@@ -44,10 +44,13 @@ repositories {
 
 dependencies {
     testImplementation("io.javalin:javalin-testtools:6.1.3")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     implementation("io.javalin:javalin:6.1.3")
     implementation("org.slf4j:slf4j-simple:2.0.12")
     implementation("com.zaxxer:HikariCP:5.1.0")
     implementation("com.h2database:h2:2.2.224")
+    implementation("com.konghq:unirest-java:3.14.5")
+    implementation("org.jsoup:jsoup:1.17.2")
     implementation("org.postgresql:postgresql:42.7.3")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -60,12 +63,12 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok:1.18.42")
 }
 
-sonar {
-    properties {
-        property("sonar.projectKey", "SaintCap_java-project-72")
-        property("sonar.organization", "saintcap")
-    }
-}
+//sonar {
+//   properties {
+//        property("sonar.projectKey", "SaintCap_java-project-72")
+//        property("sonar.organization", "saintcap")
+//    }
+//}
 
 tasks.named<Test>("test") {
     useJUnitPlatform()

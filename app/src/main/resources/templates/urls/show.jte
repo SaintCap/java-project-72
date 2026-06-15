@@ -1,6 +1,10 @@
 @import hexlet.code.model.Url
+@import hexlet.code.model.UrlCheck
+@import java.util.List
 @import java.time.format.DateTimeFormatter
+
 @param Url url
+@param List<UrlCheck> checks
 @param String flash = null
 
 @template.layout(flash = flash, content = @`
@@ -35,20 +39,32 @@
         </button>
     </form>
 
-    <table class="table table-striped" data-test="checks">
-        <thead>
+    <table class="table table-striped table-hover" data-test="checks">
+        <thead class="thead-light" style="border-bottom: 3px solid #0d6efd;">
         <tr>
-            <th>ID</th>
-            <th>Код ответа</th>
-            <th>h1</th>
-            <th>title</th>
-            <th>description</th>
-            <th>Дата создания</th>
+            <th class="text-muted small text-uppercase">ID</th>
+            <th class="text-muted small text-uppercase">Код ответа</th>
+            <th class="text-muted small text-uppercase">H1</th>
+            <th class="text-muted small text-uppercase">Title</th>
+            <th class="text-muted small text-uppercase">Description</th>
+            <th class="text-muted small text-uppercase">Дата проверки</th>
         </tr>
         </thead>
-
         <tbody>
-        <!-- Здесь будут строки проверок -->
+        @for(var check : checks)
+            <tr>
+                <td class="font-weight-bold">${check.getId()}</td>
+                <td>${check.getStatusCode()}</td>
+                <td>${check.getShortH1()}</td>
+                <td>${check.getShortTitle()}</td>
+                <td>${check.getShortDescription()}</td>
+                <td class="text-nowrap">
+                    ${check.getCreatedAt()
+                    .toLocalDateTime()
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}
+                </td>
+            </tr>
+        @endfor
         </tbody>
     </table>
 

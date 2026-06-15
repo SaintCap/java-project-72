@@ -1,23 +1,25 @@
 package hexlet.code;
 
-import gg.jte.resolve.DirectoryCodeResolver;
-import hexlet.code.util.DataSourceFactory;
-import io.javalin.Javalin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
-
-import java.nio.file.Path;
-import java.sql.SQLException;
-
+import gg.jte.resolve.DirectoryCodeResolver;
 import hexlet.code.model.Url;
+import hexlet.code.model.UrlCheck;
+import hexlet.code.repository.UrlCheckRepository;
 import hexlet.code.repository.UrlRepository;
+import hexlet.code.util.DataSourceFactory;
+import io.javalin.Javalin;
+
+import kong.unirest.Unirest;
+
+import org.jsoup.Jsoup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.nio.file.Path;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +28,6 @@ public class App {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
-    // FIX: template engine is created once and reused, not recreated per request
     private static TemplateEngine createTemplateEngine() {
         var codeResolver = new DirectoryCodeResolver(
                 Path.of("src/main/resources/templates")
@@ -48,11 +49,27 @@ public class App {
                     created_at TIMESTAMP NOT NULL
                 )
             """);
+
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS url_checks (
+                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    status_code INTEGER NOT NULL,
+                    title VARCHAR(255),
+                    h1 VARCHAR(255),
+                    description TEXT,
+                    url_id BIGINT NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
+                    CONSTRAINT fk_url_checks_url
+                        FOREIGN KEY (url_id)
+                        REFERENCES urls(id)
+                        ON DELETE CASCADE
+                )
+            """);
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
-        // FIX: create the template engine once here, not inside the lambda
         var templateEngine = createTemplateEngine();
 
         var app = Javalin.create(config -> {
@@ -147,16 +164,67 @@ public class App {
                     ctx.pathParam("id")
             );
 
-            var url = UrlRepository.find(id)
-                    .orElseThrow();
-
+            var url = UrlRepository.find(id).orElseThrow();
+            var checks = UrlCheckRepository.findByUrlId(id);
             var model = new HashMap<String, Object>();
 
+            model.put("checks", checks);
             model.put("url", url);
-
             model.put("flash", java.util.Objects.toString(ctx.consumeSessionAttribute("flash"), ""));
 
             ctx.render("urls/show.jte", model);
+        });
+
+        app.post("/urls/{id}/checks", ctx -> {
+
+            Long urlId = Long.valueOf(ctx.pathParam("id"));
+
+            var url = UrlRepository.find(urlId)
+                    .orElseThrow();
+
+            try {
+
+                var response = Unirest.get(url.getName())
+                        .asString();
+
+                var document = Jsoup.parse(response.getBody());
+
+                var check = new UrlCheck();
+
+                check.setUrlId(urlId);
+                check.setStatusCode(response.getStatus());
+                check.setTitle(document.title());
+
+                var h1 = document.selectFirst("h1");
+                check.setH1(h1 != null ? h1.text() : null);
+
+                var description = document.selectFirst("meta[name=description]");
+                check.setDescription(
+                        description != null
+                                ? description.attr("content")
+                                : null
+                );
+
+                check.setCreatedAt(
+                        new Timestamp(System.currentTimeMillis())
+                );
+
+                UrlCheckRepository.save(check);
+
+                ctx.sessionAttribute(
+                        "flash",
+                        "Страница успешно проверена"
+                );
+
+            } catch (Exception e) {
+
+                ctx.sessionAttribute(
+                        "flash",
+                        "Произошла ошибка при проверке"
+                );
+            }
+
+            ctx.redirect("/urls/" + urlId);
         });
 
         return app;

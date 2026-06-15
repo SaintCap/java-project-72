@@ -65,7 +65,6 @@ public class UrlRepository extends BaseRepository {
         ) {
             stmt.setString(1, name);
 
-            // FIX: ResultSet now inside try-with-resources
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return Optional.of(buildUrl(rs));
