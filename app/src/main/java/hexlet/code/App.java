@@ -229,6 +229,7 @@ public class App {
         var app = getApp();
 
         app.start(8000);
-        LOGGER.info("Application started on port 7070");
+
+        LOGGER.info("Application started on port 8000");
     }
 }
