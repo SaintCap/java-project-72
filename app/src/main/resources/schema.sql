@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS urls (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS url_checks (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    status_code INTEGER NOT NULL,
+    title VARCHAR(255),
+    h1 VARCHAR(255),
+    description TEXT,
+    url_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    CONSTRAINT fk_url_checks_url
+        FOREIGN KEY (url_id)
+        REFERENCES urls(id)
+        ON DELETE CASCADE
+);

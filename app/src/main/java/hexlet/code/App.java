@@ -19,7 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.HashMap;
@@ -36,35 +38,29 @@ public class App {
         return TemplateEngine.create(codeResolver, ContentType.Html);
     }
 
+    private static String readResourceFile(String fileName) throws IOException {
+        var classLoader = App.class.getClassLoader();
+        try (var inputStream = classLoader.getResourceAsStream(fileName)) {
+            if (inputStream == null) {
+                throw new IOException("Resource not found: " + fileName);
+            }
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
     private static void initSchema(DataSource dataSource) {
         try (var conn = dataSource.getConnection();
              var stmt = conn.createStatement()) {
 
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS urls (
-                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                    name VARCHAR(255) UNIQUE NOT NULL,
-                    created_at TIMESTAMP NOT NULL
-                )
-                """);
+            var sql = readResourceFile("schema.sql");
 
-            stmt.execute("""
-                CREATE TABLE IF NOT EXISTS url_checks (
-                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                    status_code INTEGER NOT NULL,
-                    title VARCHAR(255),
-                    h1 VARCHAR(255),
-                    description TEXT,
-                    url_id BIGINT NOT NULL,
-                    created_at TIMESTAMP NOT NULL,
-                    CONSTRAINT fk_url_checks_url
-                        FOREIGN KEY (url_id)
-                        REFERENCES urls(id)
-                        ON DELETE CASCADE
-                )
-                """);
+            for (var statement : sql.split(";")) {
+                if (!statement.isBlank()) {
+                    stmt.execute(statement);
+                }
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -228,6 +224,6 @@ public class App {
         var app = getApp();
 
         app.start(8000);
-        LOGGER.info("Application started on port 8000");
+        LOGGER.info("Application started on port 7070");
     }
 }
