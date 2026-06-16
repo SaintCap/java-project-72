@@ -21,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.net.URI;
+import java.net.IDN;
+import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -192,19 +194,58 @@ public class App {
 
             URI uri = new URI(url);
 
-            String protocol = uri.getScheme();
+            String scheme = uri.getScheme();
             String host = uri.getHost();
             int port = uri.getPort();
 
-            if (port == -1
-                    || (port == 80 && "http".equals(protocol))
-                    || (port == 443 && "https".equals(protocol))) {
-                return protocol + "://" + host;
+            if (!"http".equalsIgnoreCase(scheme)
+                    && !"https".equalsIgnoreCase(scheme)) {
+                throw new IllegalArgumentException("Unsupported scheme");
             }
 
-            return protocol + "://" + host + ":" + port;
+            if (host == null || host.isBlank()) {
+                throw new IllegalArgumentException("Missing host");
+            }
+
+            validateHost(host);
+
+            StringBuilder result = new StringBuilder()
+                    .append(scheme)
+                    .append("://")
+                    .append(host);
+
+            if (port != -1
+                    && !(port == 80 && "http".equalsIgnoreCase(scheme))
+                    && !(port == 443 && "https".equalsIgnoreCase(scheme))) {
+                result.append(':').append(port);
+            }
+
+            return result.toString();
+
         } catch (Exception e) {
             throw new RuntimeException("Invalid URL: " + rawUrl, e);
+        }
+    }
+
+    private static void validateHost(String host) {
+        if ("localhost".equalsIgnoreCase(host)) {
+            return;
+        }
+
+        try {
+            InetAddress.getByName(host);
+            return;
+        } catch (Exception ignored) {
+        }
+
+        try {
+            String asciiHost = IDN.toASCII(host);
+
+            if (!asciiHost.matches("^(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z0-9-]{2,}$")) {
+                throw new IllegalArgumentException();
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid host");
         }
     }
 
