@@ -160,9 +160,16 @@ public class App {
             var response = Unirest.get(url.getName()).asString();
             var document = Jsoup.parse(response.getBody());
 
+            var statusOfResponse = response.getStatus();
+            if (statusOfResponse >= 400 && statusOfResponse <= 600) {
+                ctx.sessionAttribute("flash", "Произошла ошибка при проверке");
+                ctx.redirect("/urls/" + urlId);
+                return;
+            }
+
             var check = new UrlCheck();
             check.setUrlId(urlId);
-            check.setStatusCode(response.getStatus());
+            check.setStatusCode(statusOfResponse);
             check.setTitle(document.title());
 
             var h1 = document.selectFirst("h1");
