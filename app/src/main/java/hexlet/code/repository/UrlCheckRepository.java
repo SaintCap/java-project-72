@@ -85,7 +85,7 @@ public class UrlCheckRepository extends BaseRepository {
         }
     }
 
-    public static Map<Long, UrlCheck> findLatestChecks()
+    public static Map<Long, UrlCheck> findLatestChecksByUrlId()
             throws SQLException {
 
         String sql = """
@@ -99,14 +99,14 @@ public class UrlCheckRepository extends BaseRepository {
                 PreparedStatement stmt = conn.prepareStatement(sql);
                 ResultSet rs = stmt.executeQuery()
         ) {
-            Map<Long, UrlCheck> result = new HashMap<>();
+            Map<Long, UrlCheck> urlIdToLatestCheck = new HashMap<>();
 
             while (rs.next()) {
                 UrlCheck check = buildUrlCheck(rs);
-                result.put(check.getUrlId(), check);
+                urlIdToLatestCheck.put(check.getUrlId(), check);
             }
 
-            return result;
+            return urlIdToLatestCheck;
         }
     }
 

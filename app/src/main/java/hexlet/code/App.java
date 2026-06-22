@@ -4,28 +4,18 @@ import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
 import gg.jte.resolve.ResourceCodeResolver;
-import hexlet.code.model.Url;
-import hexlet.code.model.UrlCheck;
-import hexlet.code.repository.UrlCheckRepository;
-import hexlet.code.repository.UrlRepository;
+import hexlet.code.controller.UrlCheckController;
+import hexlet.code.controller.UrlController;
 import hexlet.code.util.DataSourceFactory;
 import io.javalin.Javalin;
-import io.javalin.http.Context;
 
-import kong.unirest.Unirest;
-
-import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.net.URI;
-import java.net.IDN;
-import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -83,177 +73,13 @@ public class App {
             });
         });
 
-        app.get("/", App::rootPage);
-        app.post("/urls", App::createUrl);
-        app.get("/urls", App::listUrls);
-        app.get("/urls/{id}", App::showUrl);
-        app.post("/urls/{id}/checks", App::createCheck);
+        app.get("/", UrlController::root);
+        app.post("/urls", UrlController::create);
+        app.get("/urls", UrlController::index);
+        app.get("/urls/{id}", UrlController::show);
+        app.post("/urls/{id}/checks", UrlCheckController::create);
 
         return app;
-    }
-
-    private static void rootPage(Context ctx) {
-        var model = new HashMap<String, Object>();
-        model.put("flash", java.util.Objects.toString(ctx.consumeSessionAttribute("flash"), ""));
-        ctx.render("index.jte", model);
-    }
-
-    private static void createUrl(Context ctx) {
-        String rawUrl = ctx.formParam("url");
-
-        try {
-            String normalized = normalizeUrl(rawUrl);
-            var existing = UrlRepository.findByName(normalized);
-
-            if (existing.isPresent()) {
-                ctx.sessionAttribute("flash", "Страница уже существует");
-                ctx.redirect("/urls/" + existing.get().getId());
-                return;
-            }
-
-            Url url = new Url();
-            url.setName(normalized);
-            url.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-
-            UrlRepository.save(url);
-
-            ctx.sessionAttribute("flash", "Страница успешно добавлена");
-            ctx.redirect("/urls/" + url.getId());
-
-        } catch (Exception e) {
-            var model = new HashMap<String, Object>();
-            model.put("flash", "Некорректный URL");
-            ctx.status(422);
-            ctx.render("index.jte", model);
-        }
-    }
-
-    private static void listUrls(Context ctx) throws SQLException {
-        var urls = UrlRepository.getEntities();
-        var latestChecks = UrlCheckRepository.findLatestChecks();
-        var model = new HashMap<String, Object>();
-        model.put("urls", urls);
-        model.put("latestChecks", latestChecks);
-        model.put("flash", java.util.Objects.toString(ctx.consumeSessionAttribute("flash"), ""));
-        ctx.render("urls/index.jte", model);
-    }
-
-    private static void showUrl(Context ctx) throws SQLException {
-        Long id = Long.valueOf(ctx.pathParam("id"));
-
-        var url = UrlRepository.find(id).orElseThrow();
-        var checks = UrlCheckRepository.findByUrlId(id);
-        var model = new HashMap<String, Object>();
-
-        model.put("checks", checks);
-        model.put("url", url);
-        model.put("flash", java.util.Objects.toString(ctx.consumeSessionAttribute("flash"), ""));
-
-        ctx.render("urls/show.jte", model);
-    }
-
-    private static void createCheck(Context ctx) throws SQLException {
-        Long urlId = Long.valueOf(ctx.pathParam("id"));
-        var url = UrlRepository.find(urlId).orElseThrow();
-
-        try {
-            var response = Unirest.get(url.getName()).asString();
-            var document = Jsoup.parse(response.getBody());
-
-            var statusOfResponse = response.getStatus();
-            if (statusOfResponse >= 400 && statusOfResponse <= 600) {
-                ctx.sessionAttribute("flash", "Произошла ошибка при проверке");
-                ctx.redirect("/urls/" + urlId);
-                return;
-            }
-
-            var check = new UrlCheck();
-            check.setUrlId(urlId);
-            check.setStatusCode(statusOfResponse);
-            check.setTitle(document.title());
-
-            var h1 = document.selectFirst("h1");
-            check.setH1(h1 != null ? h1.text() : null);
-
-            var description = document.selectFirst("meta[name=description]");
-            check.setDescription(description != null ? description.attr("content") : null);
-
-            check.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-
-            UrlCheckRepository.save(check);
-
-            ctx.sessionAttribute("flash", "Страница успешно проверена");
-
-        } catch (Exception e) {
-            ctx.sessionAttribute("flash", "Произошла ошибка при проверке");
-        }
-
-        ctx.redirect("/urls/" + urlId);
-    }
-
-    static String normalizeUrl(String rawUrl) {
-        try {
-            String url = rawUrl.trim();
-
-            if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                url = "https://" + url;
-            }
-
-            URI uri = new URI(url);
-
-            String scheme = uri.getScheme();
-            String host = uri.getHost();
-            int port = uri.getPort();
-
-            if (!"http".equalsIgnoreCase(scheme)
-                    && !"https".equalsIgnoreCase(scheme)) {
-                throw new IllegalArgumentException("Unsupported scheme");
-            }
-
-            if (host == null || host.isBlank()) {
-                throw new IllegalArgumentException("Missing host");
-            }
-
-            validateHost(host);
-
-            StringBuilder result = new StringBuilder()
-                    .append(scheme)
-                    .append("://")
-                    .append(host);
-
-            if (port != -1
-                    && !(port == 80 && "http".equalsIgnoreCase(scheme))
-                    && !(port == 443 && "https".equalsIgnoreCase(scheme))) {
-                result.append(':').append(port);
-            }
-
-            return result.toString();
-
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid URL: " + rawUrl, e);
-        }
-    }
-
-    private static void validateHost(String host) {
-        if ("localhost".equalsIgnoreCase(host)) {
-            return;
-        }
-
-        try {
-            InetAddress.getByName(host);
-            return;
-        } catch (Exception ignored) {
-        }
-
-        try {
-            String asciiHost = IDN.toASCII(host);
-
-            if (!asciiHost.matches("^(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z0-9-]{2,}$")) {
-                throw new IllegalArgumentException();
-            }
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid host");
-        }
     }
 
     private static Map<String, Object> modelToMap(Object model) {
